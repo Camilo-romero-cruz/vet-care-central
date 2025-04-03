@@ -18,12 +18,12 @@ import {
   Home, 
   LogOut, 
   Package, 
-  Paw, 
   Settings, 
   Stethoscope, 
   Users,
   Activity
 } from 'lucide-react';
+import { PawIcon } from '@/components/icons/PawIcon';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -51,7 +51,7 @@ export function AppSidebar() {
       {
         title: 'Mascotas',
         path: '/pets',
-        icon: Paw,
+        icon: 'Paw',
         roles: ['admin', 'veterinarian', 'receptionist', 'client'],
       },
     ];
@@ -167,7 +167,11 @@ export function AppSidebar() {
                       location.pathname === item.path && "font-medium text-primary"
                     )}
                   >
-                    <item.icon className="h-5 w-5" />
+                    {item.icon === 'Paw' ? (
+                      <PawIcon className="h-5 w-5" />
+                    ) : (
+                      <item.icon className="h-5 w-5" />
+                    )}
                     <span>{item.title}</span>
                   </Link>
                 </SidebarMenuButton>

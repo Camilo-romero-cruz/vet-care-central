@@ -1,6 +1,7 @@
-
 import React, { useState } from 'react';
-import { Calendar, Clock, User, Paw, FileText, Check, X, ExternalLink } from 'lucide-react';
+import { Calendar, Clock, FileText, Check, X } from 'lucide-react';
+import { UserIcon } from 'lucide-react';
+import { PawIcon } from '@/components/icons/PawIcon';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -10,9 +11,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { appointments as mockAppointments, pets as mockPets, users as mockUsers } from '@/data/mockData';
-import { Appointment, Pet, User } from '@/types';
+import { Appointment, Pet } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { Badge } from '@/components/ui/badge';
+import { ExtendedBadge } from '@/components/ui/extended-badge';
 
 const Appointments = () => {
   const { currentUser } = useAuth();
@@ -21,15 +22,12 @@ const Appointments = () => {
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   
-  // Filter pets based on user role
   const availablePets = currentUser?.role === 'client' 
     ? mockPets.filter(pet => pet.ownerId === currentUser.id)
     : mockPets;
   
-  // Filter veterinarians
   const veterinarians = mockUsers.filter(user => user.role === 'veterinarian');
 
-  // Filter appointments based on user role and selected date
   const filteredAppointments = appointments.filter(appointment => {
     let roleFilter = true;
     
@@ -45,13 +43,11 @@ const Appointments = () => {
     return roleFilter && dateFilter;
   });
 
-  // Get pet name by ID
   const getPetName = (petId: string): string => {
     const pet = mockPets.find(pet => pet.id === petId);
     return pet ? pet.name : 'Mascota no encontrada';
   };
 
-  // Get pet owner name
   const getPetOwnerName = (petId: string): string => {
     const pet = mockPets.find(pet => pet.id === petId);
     if (pet) {
@@ -61,13 +57,11 @@ const Appointments = () => {
     return 'Propietario no encontrado';
   };
 
-  // Get veterinarian name by ID
   const getVeterinarianName = (vetId: string): string => {
     const vet = mockUsers.find(user => user.id === vetId);
     return vet ? vet.name : 'Veterinario no encontrado';
   };
 
-  // Handle appointment status change
   const handleStatusChange = (appointmentId: string, newStatus: 'scheduled' | 'completed' | 'cancelled') => {
     setAppointments(appointments.map(appointment => 
       appointment.id === appointmentId ? { ...appointment, status: newStatus } : appointment
@@ -79,7 +73,6 @@ const Appointments = () => {
     });
   };
 
-  // Handle new appointment creation
   const handleCreateAppointment = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -228,13 +221,13 @@ const Appointments = () => {
                   <CardTitle className="text-lg font-semibold">
                     {getPetName(appointment.petId)}
                   </CardTitle>
-                  <Badge 
+                  <ExtendedBadge 
                     variant={appointment.status === 'scheduled' ? 'default' : 
                            appointment.status === 'completed' ? 'success' : 'destructive'}
                   >
                     {appointment.status === 'scheduled' ? 'Programada' : 
                      appointment.status === 'completed' ? 'Completada' : 'Cancelada'}
-                  </Badge>
+                  </ExtendedBadge>
                 </div>
                 <CardDescription>
                   {appointment.reason}
@@ -252,13 +245,13 @@ const Appointments = () => {
                   </div>
                   {(currentUser?.role === 'admin' || currentUser?.role === 'veterinarian' || currentUser?.role === 'receptionist') && (
                     <div className="flex items-center">
-                      <User className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <UserIcon className="mr-2 h-4 w-4 text-muted-foreground" />
                       <span>{getPetOwnerName(appointment.petId)}</span>
                     </div>
                   )}
                   {currentUser?.role !== 'veterinarian' && (
                     <div className="flex items-center">
-                      <Paw className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <PawIcon className="mr-2 h-4 w-4 text-muted-foreground" />
                       <span>Dr. {getVeterinarianName(appointment.veterinarianId)}</span>
                     </div>
                   )}

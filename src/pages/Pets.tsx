@@ -8,9 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { pets as mockPets, users as mockUsers, medicalRecords as mockRecords } from '@/data/mockData';
 import { useAuth } from '@/contexts/AuthContext';
-import { Pet, MedicalRecord, User } from '@/types';
+import { Pet, MedicalRecord } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, ExternalLink, FileText, Paw, Plus, User as UserIcon } from 'lucide-react';
+import { Calendar, FileText, Plus, User as UserIcon } from 'lucide-react';
+import { PawIcon } from '@/components/icons/PawIcon';
 
 const Pets = () => {
   const { currentUser } = useAuth();
@@ -328,7 +329,7 @@ const Pets = () => {
                     className="w-full" 
                     onClick={() => handleViewPet(pet)}
                   >
-                    <Paw className="mr-2 h-4 w-4" />
+                    <PawIcon className="mr-2 h-4 w-4" />
                     Ver Detalles
                   </Button>
                 </CardFooter>
@@ -336,7 +337,7 @@ const Pets = () => {
             ))
           ) : (
             <div className="col-span-full flex flex-col items-center justify-center p-10 text-center">
-              <Paw className="h-10 w-10 text-muted-foreground mb-4" />
+              <PawIcon className="h-10 w-10 text-muted-foreground mb-4" />
               <h3 className="font-semibold text-lg mb-1">No hay mascotas registradas</h3>
               <p className="text-muted-foreground mb-4">
                 No se encontraron mascotas. Puedes registrar una nueva mascota haciendo clic en el botón de abajo.

@@ -1,7 +1,8 @@
 
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Clock, Paw, Users, Package, DollarSign } from 'lucide-react';
+import { Calendar, Clock, Users, Package, DollarSign } from 'lucide-react';
+import { PawIcon } from '@/components/icons/PawIcon';
 import { appointments, pets, products, users } from '@/data/mockData';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -53,7 +54,7 @@ const Dashboard = () => {
         title: 'Mascotas Registradas',
         value: pets.length,
         description: 'Total de mascotas en el sistema',
-        icon: Paw,
+        icon: PawIcon,
         color: 'text-green-500',
         bgColor: 'bg-green-50',
         roles: ['admin', 'veterinarian', 'receptionist'],
@@ -104,7 +105,7 @@ const Dashboard = () => {
         title: 'Tus Mascotas',
         value: clientPets.length,
         description: 'Total de mascotas registradas',
-        icon: Paw,
+        icon: PawIcon,
         color: 'text-green-500',
         bgColor: 'bg-green-50',
       },
@@ -137,7 +138,11 @@ const Dashboard = () => {
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
               <div className={`${card.bgColor} ${card.color} p-2 rounded-full`}>
-                <card.icon className="h-4 w-4" />
+                {card.icon === PawIcon ? (
+                  <PawIcon className="h-4 w-4" />
+                ) : (
+                  <card.icon className="h-4 w-4" />
+                )}
               </div>
             </CardHeader>
             <CardContent>
