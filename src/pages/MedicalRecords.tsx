@@ -4,10 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Search, FileText, Filter } from 'lucide-react';
 import { PawIcon } from '@/components/icons/PawIcon';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { ExtendedBadge } from '@/components/ui/extended-badge';
 
 const MedicalRecords = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -58,9 +58,9 @@ const MedicalRecords = () => {
                     <PawIcon className="h-5 w-5 text-primary" />
                     {record.petName}
                   </CardTitle>
-                  <Badge variant={record.status === 'Completado' ? 'success' : 'secondary'}>
+                  <ExtendedBadge variant={record.status === 'Completado' ? 'success' : 'secondary'}>
                     {record.status}
-                  </Badge>
+                  </ExtendedBadge>
                 </div>
               </CardHeader>
               <CardContent>
@@ -115,9 +115,9 @@ const MedicalRecords = () => {
                     <TableCell>{new Date(record.date).toLocaleDateString('es-ES')}</TableCell>
                     <TableCell>{record.diagnosis}</TableCell>
                     <TableCell>
-                      <Badge variant={record.status === 'Completado' ? 'success' : 'secondary'}>
+                      <ExtendedBadge variant={record.status === 'Completado' ? 'success' : 'secondary'}>
                         {record.status}
-                      </Badge>
+                      </ExtendedBadge>
                     </TableCell>
                     <TableCell>
                       <Button variant="ghost" size="sm" className="flex items-center gap-1">
