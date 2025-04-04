@@ -5,17 +5,20 @@ import { AppSidebar } from '@/components/AppSidebar';
 import { Outlet, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserRole } from '@/types';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ProtectedLayoutProps {
   allowedRoles: UserRole[];
 }
 
 export const Layout: React.FC = () => {
+  const isMobile = useIsMobile();
+  
   return (
     <SidebarProvider>
       <div className="flex w-full min-h-screen">
         <AppSidebar />
-        <main className="flex-1 overflow-y-auto p-6 animate-fade-in">
+        <main className={`flex-1 overflow-y-auto p-4 md:p-6 animate-fade-in ${isMobile ? 'pb-16' : ''}`}>
           <Outlet />
         </main>
       </div>

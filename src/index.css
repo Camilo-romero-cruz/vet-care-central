@@ -110,4 +110,61 @@
       transform: translateY(0);
     }
   }
+  
+  /* Responsive classes */
+  .responsive-container {
+    @apply px-4 sm:px-6 md:px-8 w-full max-w-7xl mx-auto;
+  }
+  
+  .responsive-grid {
+    @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+  }
+  
+  .responsive-card {
+    @apply flex flex-col h-full;
+  }
+  
+  /* Card styles for mobile */
+  .mobile-card {
+    @apply rounded-md shadow-sm border p-4;
+  }
+  
+  /* Mobile navigation fixes */
+  .mobile-bottom-nav {
+    @apply fixed bottom-0 left-0 right-0 bg-background border-t flex justify-around items-center p-2 z-50 md:hidden;
+  }
+  
+  .mobile-nav-item {
+    @apply flex flex-col items-center justify-center p-2 text-xs;
+  }
+  
+  /* Table responsiveness */
+  .responsive-table {
+    @apply w-full overflow-x-auto;
+  }
+  
+  /* Form responsiveness */
+  .responsive-form {
+    @apply space-y-4 sm:space-y-5;
+  }
+  
+  .responsive-form-row {
+    @apply flex flex-col sm:flex-row sm:space-x-4 space-y-4 sm:space-y-0;
+  }
+}
+
+/* Mobile first media queries */
+@media (max-width: 640px) {
+  .hide-on-mobile {
+    display: none;
+  }
+  
+  .full-width-on-mobile {
+    width: 100%;
+  }
+  
+  .stack-on-mobile {
+    display: flex;
+    flex-direction: column;
+  }
 }

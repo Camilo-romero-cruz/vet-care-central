@@ -11,6 +11,12 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Appointments from "./pages/Appointments";
 import Pets from "./pages/Pets";
+import MedicalRecords from "./pages/MedicalRecords";
+import Clients from "./pages/Clients";
+import Products from "./pages/Products";
+import Services from "./pages/Services";
+import Staff from "./pages/Staff";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 // Components
@@ -35,6 +41,24 @@ const App = () => (
               <Route path="/" element={<Dashboard />} />
               <Route path="/appointments" element={<Appointments />} />
               <Route path="/pets" element={<Pets />} />
+            </Route>
+            
+            {/* Routes for admin and veterinarians */}
+            <Route element={<ProtectedLayout allowedRoles={['admin', 'veterinarian']} />}>
+              <Route path="/records" element={<MedicalRecords />} />
+            </Route>
+            
+            {/* Routes for admin and receptionists */}
+            <Route element={<ProtectedLayout allowedRoles={['admin', 'receptionist']} />}>
+              <Route path="/clients" element={<Clients />} />
+              <Route path="/products" element={<Products />} />
+              <Route path="/services" element={<Services />} />
+            </Route>
+            
+            {/* Routes only for admin */}
+            <Route element={<ProtectedLayout allowedRoles={['admin']} />}>
+              <Route path="/staff" element={<Staff />} />
+              <Route path="/settings" element={<Settings />} />
             </Route>
             
             {/* Default redirect to dashboard */}
