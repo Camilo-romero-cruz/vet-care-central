@@ -73,7 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return requiredRoles.includes(currentUser.role);
   };
 
-  // Nuevo método para verificar acceso a características específicas según el rol
+  // Sistema de permisos por características específicas según el rol
   const hasFeatureAccess = (feature: 'billing_view' | 'billing_create' | 'billing_payment' | 'financial_stats' | 'medical_diagnosis' | 'products_pricing'): boolean => {
     if (!currentUser) return false;
     

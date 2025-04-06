@@ -17,12 +17,13 @@ import { useToast } from '@/hooks/use-toast';
 import { pets as mockPets, services as mockServices, products as mockProducts, users as mockUsers } from '@/data/mockData';
 import { invoices as mockInvoices, payments as mockPayments } from '@/data/invoiceData';
 import { Invoice, Payment, Pet, UserRole } from '@/types';
-import { Badge } from '@/components/ui/badge';
-import { MonthlyReportCard } from '@/components/billing/MonthlyReportCard';
 import { ExtendedBadge } from '@/components/ui/extended-badge';
+import { MonthlyReportCard } from '@/components/billing/MonthlyReportCard';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Billing = () => {
   const { toast } = useToast();
+  const { hasFeatureAccess } = useAuth();
   const [invoices, setInvoices] = useState<Invoice[]>(mockInvoices);
   const [payments, setPayments] = useState<Payment[]>(mockPayments);
   const [searchTerm, setSearchTerm] = useState('');
@@ -30,6 +31,9 @@ const Billing = () => {
   const [isCreateInvoiceDialogOpen, setIsCreateInvoiceDialogOpen] = useState(false);
   const [isAddPaymentDialogOpen, setIsAddPaymentDialogOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  
+  const canCreateInvoices = hasFeatureAccess('billing_create');
+  const canProcessPayments = hasFeatureAccess('billing_payment');
 
   // Esquema para la validación del formulario de pago
   const paymentSchema = z.object({
@@ -70,7 +74,11 @@ const Billing = () => {
     // Actualizar el estado de la factura a pagada
     const updatedInvoices = invoices.map(invoice => 
       invoice.id === selectedInvoice.id 
-        ? { ...invoice, status: 'paid' as const, paymentId: newPayment.id } 
+        ? { 
+            ...invoice, 
+            status: 'paid' as const, 
+            paymentId: newPayment.id 
+          } 
         : invoice
     );
 
@@ -125,16 +133,6 @@ const Billing = () => {
   const getPaymentInfo = (paymentId?: string): Payment | undefined => {
     if (!paymentId) return undefined;
     return payments.find(payment => payment.id === paymentId);
-  };
-
-  // Obtener el color de la insignia según el estado de la factura
-  const getStatusBadgeColor = (status: string) => {
-    switch (status) {
-      case 'paid': return 'bg-green-100 text-green-800';
-      case 'overdue': return 'bg-red-100 text-red-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
   };
 
   // Formateador de moneda
@@ -202,13 +200,15 @@ const Billing = () => {
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-center">
                   <CardTitle>Gestión de Facturas</CardTitle>
-                  <Button 
-                    onClick={() => setIsCreateInvoiceDialogOpen(true)}
-                    variant="outline"
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Nueva Factura
-                  </Button>
+                  {canCreateInvoices && (
+                    <Button 
+                      onClick={() => setIsCreateInvoiceDialogOpen(true)}
+                      variant="outline"
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Nueva Factura
+                    </Button>
+                  )}
                 </div>
                 <CardDescription>
                   Administre y supervise todas las facturas de clientes
@@ -238,6 +238,7 @@ const Billing = () => {
                         <SelectItem value="paid">Pagadas</SelectItem>
                         <SelectItem value="pending">Pendientes</SelectItem>
                         <SelectItem value="overdue">Vencidas</SelectItem>
+                        <SelectItem value="cancelled">Canceladas</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -272,7 +273,8 @@ const Billing = () => {
                                 invoice.status === 'overdue' ? 'destructive' : 'outline'
                               }>
                                 {invoice.status === 'paid' ? 'Pagada' :
-                                 invoice.status === 'pending' ? 'Pendiente' : 'Vencida'}
+                                 invoice.status === 'pending' ? 'Pendiente' :
+                                 invoice.status === 'cancelled' ? 'Cancelada' : 'Vencida'}
                               </ExtendedBadge>
                             </TableCell>
                             <TableCell className="text-right">
@@ -280,7 +282,7 @@ const Billing = () => {
                                 <Button variant="ghost" size="icon">
                                   <Download className="h-4 w-4" />
                                 </Button>
-                                {invoice.status !== 'paid' && (
+                                {invoice.status !== 'paid' && canProcessPayments && (
                                   <Button 
                                     variant="ghost" 
                                     size="icon"
@@ -289,9 +291,11 @@ const Billing = () => {
                                     <CreditCard className="h-4 w-4" />
                                   </Button>
                                 )}
-                                <Button variant="ghost" size="icon">
-                                  <FilePen className="h-4 w-4" />
-                                </Button>
+                                {canCreateInvoices && (
+                                  <Button variant="ghost" size="icon">
+                                    <FilePen className="h-4 w-4" />
+                                  </Button>
+                                )}
                               </div>
                             </TableCell>
                           </TableRow>
