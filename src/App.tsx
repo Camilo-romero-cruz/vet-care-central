@@ -18,6 +18,7 @@ import Services from "./pages/Services";
 import Staff from "./pages/Staff";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import Billing from "./pages/Billing";
 
 // Components
 import { ProtectedLayout } from "./components/Layout";
@@ -53,6 +54,7 @@ const App = () => (
               <Route path="/clients" element={<Clients />} />
               <Route path="/products" element={<Products />} />
               <Route path="/services" element={<Services />} />
+              <Route path="/billing" element={<Billing />} />
             </Route>
             
             {/* Routes only for admin */}

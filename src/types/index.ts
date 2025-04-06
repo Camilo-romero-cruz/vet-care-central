@@ -58,3 +58,38 @@ export interface Service {
   duration: number; // in minutes
   category: 'consult' | 'surgery' | 'grooming' | 'vaccination' | 'other';
 }
+
+export interface Invoice {
+  id: string;
+  clientId: string;
+  petId?: string;
+  date: string;
+  dueDate: string;
+  status: 'pending' | 'paid' | 'overdue' | 'cancelled';
+  total: number;
+  subtotal: number;
+  tax: number;
+  items: InvoiceItem[];
+  paymentId?: string;
+}
+
+export interface InvoiceItem {
+  id: string;
+  invoiceId: string;
+  type: 'product' | 'service' | 'other';
+  itemId?: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
+export interface Payment {
+  id: string;
+  invoiceId: string;
+  date: string;
+  amount: number;
+  method: 'cash' | 'credit_card' | 'debit_card' | 'transfer' | 'other';
+  status: 'completed' | 'pending' | 'failed';
+  reference?: string;
+}
