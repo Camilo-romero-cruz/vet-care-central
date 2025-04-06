@@ -19,6 +19,7 @@ import { invoices as mockInvoices, payments as mockPayments } from '@/data/invoi
 import { Invoice, Payment, Pet, UserRole } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { MonthlyReportCard } from '@/components/billing/MonthlyReportCard';
+import { ExtendedBadge } from '@/components/ui/extended-badge';
 
 const Billing = () => {
   const { toast } = useToast();
@@ -69,7 +70,7 @@ const Billing = () => {
     // Actualizar el estado de la factura a pagada
     const updatedInvoices = invoices.map(invoice => 
       invoice.id === selectedInvoice.id 
-        ? { ...invoice, status: 'paid', paymentId: newPayment.id } 
+        ? { ...invoice, status: 'paid' as const, paymentId: newPayment.id } 
         : invoice
     );
 
@@ -266,13 +267,13 @@ const Billing = () => {
                             <TableCell>{new Date(invoice.dueDate).toLocaleDateString('es-ES')}</TableCell>
                             <TableCell>{currencyFormatter.format(invoice.total)}</TableCell>
                             <TableCell>
-                              <Badge variant={
+                              <ExtendedBadge variant={
                                 invoice.status === 'paid' ? 'success' :
                                 invoice.status === 'overdue' ? 'destructive' : 'outline'
                               }>
                                 {invoice.status === 'paid' ? 'Pagada' :
                                  invoice.status === 'pending' ? 'Pendiente' : 'Vencida'}
-                              </Badge>
+                              </ExtendedBadge>
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end space-x-1">
