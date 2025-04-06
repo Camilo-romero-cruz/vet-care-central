@@ -9,6 +9,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ProtectedLayoutProps {
   allowedRoles: UserRole[];
+  requiredFeature?: 'billing_view' | 'billing_create' | 'billing_payment' | 'financial_stats' | 'medical_diagnosis' | 'products_pricing';
 }
 
 export const Layout: React.FC = () => {
@@ -26,8 +27,8 @@ export const Layout: React.FC = () => {
   );
 };
 
-export const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ allowedRoles }) => {
-  const { currentUser, isLoading, hasPermission } = useAuth();
+export const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ allowedRoles, requiredFeature }) => {
+  const { currentUser, isLoading, hasPermission, hasFeatureAccess } = useAuth();
 
   if (isLoading) {
     return (
@@ -39,6 +40,11 @@ export const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ allowedRoles }
 
   if (!currentUser || !hasPermission(allowedRoles)) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Verificar acceso a características específicas
+  if (requiredFeature && !hasFeatureAccess(requiredFeature)) {
+    return <Navigate to="/" replace />;
   }
 
   return <Layout />;

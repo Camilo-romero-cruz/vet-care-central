@@ -10,6 +10,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   hasPermission: (requiredRoles: UserRole[]) => boolean;
+  hasFeatureAccess: (feature: 'billing_view' | 'billing_create' | 'billing_payment' | 'financial_stats' | 'medical_diagnosis' | 'products_pricing') => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -72,8 +73,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return requiredRoles.includes(currentUser.role);
   };
 
+  // Nuevo método para verificar acceso a características específicas según el rol
+  const hasFeatureAccess = (feature: 'billing_view' | 'billing_create' | 'billing_payment' | 'financial_stats' | 'medical_diagnosis' | 'products_pricing'): boolean => {
+    if (!currentUser) return false;
+    
+    const accessMap = {
+      // Ver facturación (admin y recepcionista)
+      billing_view: ['admin', 'receptionist'],
+      
+      // Crear facturas (solo recepcionista y admin)
+      billing_create: ['admin', 'receptionist'],
+      
+      // Registrar pagos (solo recepcionista y admin)
+      billing_payment: ['admin', 'receptionist'],
+      
+      // Ver estadísticas financieras (solo admin)
+      financial_stats: ['admin'],
+      
+      // Registrar diagnóstico médico (veterinario y admin)
+      medical_diagnosis: ['admin', 'veterinarian'],
+      
+      // Ver precios de productos y servicios (admin y recepcionista)
+      products_pricing: ['admin', 'receptionist']
+    };
+    
+    return accessMap[feature]?.includes(currentUser.role) || false;
+  };
+
   return (
-    <AuthContext.Provider value={{ currentUser, isLoading, login, logout, hasPermission }}>
+    <AuthContext.Provider value={{ currentUser, isLoading, login, logout, hasPermission, hasFeatureAccess }}>
       {children}
     </AuthContext.Provider>
   );
