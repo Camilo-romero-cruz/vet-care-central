@@ -1,1029 +1,415 @@
 
-import React, { useState } from 'react';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle,
-} from '@/components/ui/card';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle 
-} from '@/components/ui/dialog';
+import React, { useState, useMemo } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { 
-  Form, 
-  FormControl, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
-} from "@/components/ui/form";
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { Invoice, InvoiceItem, Payment, User, Pet, Product, Service } from '@/types';
-import { invoices, payments } from '@/data/invoiceData';
-import { users, pets, products, services } from '@/data/mockData';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Search, Filter, FileText, CreditCard, DollarSign, Receipt, Plus, Printer, Send, AlertCircle, CheckCircle, Calendar, Clock } from 'lucide-react';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-
-// Format currency to MXN
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(amount);
-};
-
-// Format date to Spanish locale
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  return format(date, 'PPP', { locale: es });
-};
-
-// Color and icon for invoice status
-const getInvoiceStatusDisplay = (status: Invoice['status']) => {
-  switch (status) {
-    case 'paid':
-      return {
-        color: 'success',
-        text: 'Pagada',
-        icon: <CheckCircle className="h-4 w-4" />
-      };
-    case 'overdue':
-      return {
-        color: 'destructive',
-        text: 'Vencida',
-        icon: <AlertCircle className="h-4 w-4" />
-      };
-    case 'pending':
-      return {
-        color: 'secondary',
-        text: 'Pendiente',
-        icon: <Clock className="h-4 w-4" />
-      };
-    case 'cancelled':
-      return {
-        color: 'outline',
-        text: 'Cancelada',
-        icon: <AlertCircle className="h-4 w-4" />
-      };
-    default:
-      return {
-        color: 'secondary',
-        text: status,
-        icon: null
-      };
-  }
-};
-
-// Form schema for new invoice
-const newInvoiceSchema = z.object({
-  clientId: z.string().min(1, { message: "Debe seleccionar un cliente" }),
-  petId: z.string().optional(),
-  dueDate: z.string().min(1, { message: "Debe seleccionar una fecha de vencimiento" }),
-});
-
-// Form schema for payment
-const newPaymentSchema = z.object({
-  amount: z.string().min(1, { message: "Debe ingresar un monto" }),
-  method: z.enum(['cash', 'credit_card', 'debit_card', 'transfer', 'other'], {
-    errorMap: () => ({ message: "Debe seleccionar un método de pago" }),
-  }),
-  reference: z.string().optional(),
-});
-
-// Helper to get client name from clientId
-const getClientName = (clientId: string) => {
-  const client = users.find(user => user.id === clientId);
-  return client ? client.name : 'Cliente desconocido';
-};
-
-// Helper to get pet name from petId
-const getPetName = (petId?: string) => {
-  if (!petId) return 'N/A';
-  const pet = pets.find(pet => pet.id === petId);
-  return pet ? pet.name : 'Mascota desconocida';
-};
+import { CalendarIcon, CheckIcon, CreditCard, Download, FileText, FilePen, Plus, Search, XCircleIcon } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { pets as mockPets, services as mockServices, products as mockProducts, users as mockUsers } from '@/data/mockData';
+import { invoices as mockInvoices, payments as mockPayments } from '@/data/invoiceData';
+import { Invoice, Payment, Pet, UserRole } from '@/types';
+import { Badge } from '@/components/ui/badge';
+import { MonthlyReportCard } from '@/components/billing/MonthlyReportCard';
 
 const Billing = () => {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('invoices');
+  const [invoices, setInvoices] = useState<Invoice[]>(mockInvoices);
+  const [payments, setPayments] = useState<Payment[]>(mockPayments);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [showInvoiceDetails, setShowInvoiceDetails] = useState(false);
-  const [showCreateInvoice, setShowCreateInvoice] = useState(false);
-  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-  const [currentInvoice, setCurrentInvoice] = useState<Invoice | null>(null);
-  const [newInvoiceItems, setNewInvoiceItems] = useState<Partial<InvoiceItem>[]>([]);
-  
-  const clients = users.filter(user => user.role === 'client');
-  const sortedInvoices = [...invoices].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  const sortedPayments = [...payments].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  
-  // Filter invoices based on search term and status filter
-  const filteredInvoices = sortedInvoices.filter(invoice => {
-    const clientName = getClientName(invoice.clientId).toLowerCase();
-    const invoiceId = invoice.id.toLowerCase();
-    const matchesSearch = searchTerm === '' || 
-                          clientName.includes(searchTerm.toLowerCase()) || 
-                          invoiceId.includes(searchTerm.toLowerCase());
-    
-    const matchesFilter = filterStatus === 'all' || invoice.status === filterStatus;
-    
-    return matchesSearch && matchesFilter;
-  });
-  
-  // Filter payments
-  const filteredPayments = sortedPayments.filter(payment => {
-    if (searchTerm === '') return true;
-    
-    const invoice = invoices.find(inv => inv.id === payment.invoiceId);
-    if (!invoice) return false;
-    
-    const clientName = getClientName(invoice.clientId).toLowerCase();
-    const paymentId = payment.id.toLowerCase();
-    const invoiceId = payment.invoiceId.toLowerCase();
-    
-    return clientName.includes(searchTerm.toLowerCase()) || 
-           paymentId.includes(searchTerm.toLowerCase()) ||
-           invoiceId.includes(searchTerm.toLowerCase());
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [isCreateInvoiceDialogOpen, setIsCreateInvoiceDialogOpen] = useState(false);
+  const [isAddPaymentDialogOpen, setIsAddPaymentDialogOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+
+  // Esquema para la validación del formulario de pago
+  const paymentSchema = z.object({
+    amount: z.string().min(1, 'El monto es requerido'),
+    method: z.enum(['cash', 'credit_card', 'debit_card', 'transfer'], {
+      required_error: 'Por favor seleccione un método de pago',
+    }),
+    reference: z.string().optional(),
   });
 
-  const invoiceForm = useForm<z.infer<typeof newInvoiceSchema>>({
-    resolver: zodResolver(newInvoiceSchema),
+  // Tipo para los datos del formulario de pago
+  type PaymentFormValues = z.infer<typeof paymentSchema>;
+
+  // Formulario para registrar un pago
+  const paymentForm = useForm<PaymentFormValues>({
+    resolver: zodResolver(paymentSchema),
     defaultValues: {
-      clientId: "",
-      petId: "",
-      dueDate: new Date().toISOString().split('T')[0],
+      amount: '',
+      method: 'cash',
+      reference: '',
     },
   });
 
-  const paymentForm = useForm<z.infer<typeof newPaymentSchema>>({
-    resolver: zodResolver(newPaymentSchema),
-    defaultValues: {
-      amount: "",
-      method: "cash",
-      reference: "",
-    },
-  });
+  // Manejar el envío del formulario de pago
+  const handlePaymentSubmit = (data: PaymentFormValues) => {
+    if (!selectedInvoice) return;
 
-  const handleViewInvoice = (invoice: Invoice) => {
-    setCurrentInvoice(invoice);
-    setShowInvoiceDetails(true);
-  };
-
-  const handleOpenCreateInvoice = () => {
-    invoiceForm.reset();
-    setNewInvoiceItems([]);
-    setShowCreateInvoice(true);
-  };
-
-  const handleProcessPayment = (invoice: Invoice) => {
-    setCurrentInvoice(invoice);
-    paymentForm.setValue("amount", invoice.total.toString());
-    setShowPaymentDialog(true);
-  };
-
-  const handleAddInvoiceItem = () => {
-    setNewInvoiceItems([
-      ...newInvoiceItems,
-      {
-        type: 'product',
-        description: '',
-        quantity: 1,
-        unitPrice: 0,
-        total: 0,
-      },
-    ]);
-  };
-
-  const handleRemoveInvoiceItem = (index: number) => {
-    setNewInvoiceItems(newInvoiceItems.filter((_, i) => i !== index));
-  };
-
-  const handleInvoiceItemChange = (index: number, field: keyof InvoiceItem, value: any) => {
-    const updatedItems = [...newInvoiceItems];
-    
-    if (field === 'itemId') {
-      // Find the selected product or service
-      const type = updatedItems[index].type as 'product' | 'service';
-      const items = type === 'product' ? products : services;
-      const selectedItem = items.find(item => item.id === value);
-      
-      if (selectedItem) {
-        updatedItems[index] = {
-          ...updatedItems[index],
-          itemId: value,
-          description: selectedItem.name,
-          unitPrice: selectedItem.price,
-          total: (updatedItems[index].quantity || 1) * selectedItem.price,
-        };
-      }
-    } else if (field === 'type') {
-      updatedItems[index] = {
-        ...updatedItems[index],
-        type: value,
-        itemId: undefined,
-        description: '',
-        unitPrice: 0,
-        total: 0,
-      };
-    } else if (field === 'quantity') {
-      const quantity = parseInt(value) || 0;
-      const unitPrice = updatedItems[index].unitPrice || 0;
-      updatedItems[index] = {
-        ...updatedItems[index],
-        quantity,
-        total: quantity * unitPrice,
-      };
-    } else if (field === 'unitPrice') {
-      const unitPrice = parseFloat(value) || 0;
-      const quantity = updatedItems[index].quantity || 1;
-      updatedItems[index] = {
-        ...updatedItems[index],
-        unitPrice,
-        total: quantity * unitPrice,
-      };
-    } else {
-      updatedItems[index] = {
-        ...updatedItems[index],
-        [field]: value,
-      };
-    }
-    
-    setNewInvoiceItems(updatedItems);
-  };
-
-  const calculateNewInvoiceTotal = () => {
-    const subtotal = newInvoiceItems.reduce((sum, item) => sum + (item.total || 0), 0);
-    const tax = subtotal * 0.16;
-    const total = subtotal + tax;
-    
-    return { subtotal, tax, total };
-  };
-
-  const handleSubmitInvoice = (data: z.infer<typeof newInvoiceSchema>) => {
-    if (newInvoiceItems.length === 0) {
-      toast({
-        title: "Error",
-        description: "Debe agregar al menos un producto o servicio a la factura",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Generate a new invoice with the form data
-    const invoiceDate = new Date().toISOString().split('T')[0];
-    const invoiceId = `inv-${Date.now()}`;
-    const { subtotal, tax, total } = calculateNewInvoiceTotal();
-    
-    // Create invoice items with proper IDs
-    const items = newInvoiceItems.map((item, index) => ({
-      id: `item-${invoiceId}-${index}`,
-      invoiceId,
-      type: item.type || 'product',
-      itemId: item.itemId,
-      description: item.description || '',
-      quantity: item.quantity || 0,
-      unitPrice: item.unitPrice || 0,
-      total: item.total || 0,
-    })) as InvoiceItem[];
-    
-    // Create new invoice
-    const newInvoice: Invoice = {
-      id: invoiceId,
-      clientId: data.clientId,
-      petId: data.petId || undefined,
-      date: invoiceDate,
-      dueDate: data.dueDate,
-      status: 'pending',
-      subtotal,
-      tax,
-      total,
-      items,
-    };
-    
-    // Add the invoice to our list (in a real app, this would be an API call)
-    invoices.unshift(newInvoice);
-    
-    toast({
-      title: "Factura creada",
-      description: `Factura #${newInvoice.id} creada con éxito`,
-    });
-    
-    setShowCreateInvoice(false);
-  };
-
-  const handleSubmitPayment = (data: z.infer<typeof newPaymentSchema>) => {
-    if (!currentInvoice) return;
-    
-    // Create a new payment
-    const paymentId = `pay-${Date.now()}`;
-    const paymentDate = new Date().toISOString().split('T')[0];
-    
     const newPayment: Payment = {
-      id: paymentId,
-      invoiceId: currentInvoice.id,
-      date: paymentDate,
+      id: `pay-${Date.now()}`,
+      invoiceId: selectedInvoice.id,
+      date: new Date().toISOString().split('T')[0],
       amount: parseFloat(data.amount),
       method: data.method,
       status: 'completed',
-      reference: data.reference,
+      reference: data.method !== 'cash' ? data.reference : undefined,
     };
-    
-    // Update the invoice status
-    const invoiceIndex = invoices.findIndex(inv => inv.id === currentInvoice.id);
-    if (invoiceIndex !== -1) {
-      invoices[invoiceIndex] = {
-        ...invoices[invoiceIndex],
-        status: 'paid',
-        paymentId,
-      };
-    }
-    
-    // Add the payment to our list
-    payments.unshift(newPayment);
-    
+
+    // Actualizar el estado de la factura a pagada
+    const updatedInvoices = invoices.map(invoice => 
+      invoice.id === selectedInvoice.id 
+        ? { ...invoice, status: 'paid', paymentId: newPayment.id } 
+        : invoice
+    );
+
+    setInvoices(updatedInvoices);
+    setPayments([...payments, newPayment]);
+    setIsAddPaymentDialogOpen(false);
+    setSelectedInvoice(null);
+    paymentForm.reset();
+
     toast({
-      title: "Pago registrado",
-      description: `Pago de ${formatCurrency(parseFloat(data.amount))} registrado con éxito`,
+      title: 'Pago registrado',
+      description: `Se ha registrado un pago de $${data.amount} para la factura ${selectedInvoice.id}.`,
       variant: "success",
     });
-    
-    setShowPaymentDialog(false);
   };
 
-  const handlePrintInvoice = () => {
-    toast({
-      title: "Imprimiendo factura",
-      description: "La factura se está enviando a la impresora",
+  // Abrir el diálogo para registrar un pago
+  const openAddPaymentDialog = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    paymentForm.setValue('amount', invoice.total.toString());
+    setIsAddPaymentDialogOpen(true);
+  };
+
+  // Filtrar facturas por término de búsqueda y estado
+  const filteredInvoices = useMemo(() => {
+    return invoices.filter(invoice => {
+      const searchMatch = 
+        invoice.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        getPetName(invoice.petId).toLowerCase().includes(searchTerm.toLowerCase()) ||
+        getClientName(invoice.clientId).toLowerCase().includes(searchTerm.toLowerCase());
+
+      const statusMatch = statusFilter ? invoice.status === statusFilter : true;
+      
+      return searchMatch && statusMatch;
+    });
+  }, [invoices, searchTerm, statusFilter]);
+
+  // Obtener el nombre de la mascota a partir de su ID
+  const getPetName = (petId?: string): string => {
+    if (!petId) return 'N/A';
+    const pet = mockPets.find(pet => pet.id === petId);
+    return pet ? pet.name : 'Mascota no encontrada';
+  };
+
+  // Obtener el nombre del cliente a partir de su ID
+  const getClientName = (clientId: string): string => {
+    const client = mockUsers.find(user => user.id === clientId);
+    return client ? client.name : 'Cliente no encontrado';
+  };
+
+  // Obtener la información de pago de una factura
+  const getPaymentInfo = (paymentId?: string): Payment | undefined => {
+    if (!paymentId) return undefined;
+    return payments.find(payment => payment.id === paymentId);
+  };
+
+  // Obtener el color de la insignia según el estado de la factura
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case 'paid': return 'bg-green-100 text-green-800';
+      case 'overdue': return 'bg-red-100 text-red-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Formateador de moneda
+  const currencyFormatter = new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN',
+  });
+
+  // Generar datos para el reporte mensual
+  const generateMonthlyReportData = () => {
+    const year = new Date().getFullYear();
+    const months = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+
+    return months.map((month, index) => {
+      const monthInvoices = invoices.filter(invoice => {
+        const invoiceDate = new Date(invoice.date);
+        return invoiceDate.getMonth() === index && invoiceDate.getFullYear() === year;
+      });
+
+      const paid = monthInvoices
+        .filter(invoice => invoice.status === 'paid')
+        .reduce((sum, invoice) => sum + invoice.total, 0);
+      
+      const pending = monthInvoices
+        .filter(invoice => invoice.status === 'pending')
+        .reduce((sum, invoice) => sum + invoice.total, 0);
+      
+      const overdue = monthInvoices
+        .filter(invoice => invoice.status === 'overdue')
+        .reduce((sum, invoice) => sum + invoice.total, 0);
+
+      const total = paid + pending + overdue;
+
+      return {
+        month,
+        total,
+        paid,
+        pending,
+        overdue
+      };
     });
   };
 
-  const handleSendInvoice = () => {
-    toast({
-      title: "Enviando factura",
-      description: "La factura se está enviando por correo electrónico",
-    });
-  };
-  
-  // Render invoice status badge
-  const renderStatusBadge = (status: Invoice['status']) => {
-    const statusInfo = getInvoiceStatusDisplay(status);
-    return (
-      <Badge variant={statusInfo.color as any} className="flex items-center gap-1">
-        {statusInfo.icon}
-        {statusInfo.text}
-      </Badge>
-    );
-  };
+  // Datos para el reporte mensual
+  const monthlyReportData = generateMonthlyReportData();
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Facturación</h1>
-          <p className="text-sm text-muted-foreground">
-            Gestione facturas y pagos de la clínica veterinaria
-          </p>
-        </div>
-
-        <Button onClick={handleOpenCreateInvoice}>
-          <Plus className="mr-2 h-4 w-4" /> Nueva Factura
-        </Button>
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold tracking-tight">Facturación</h1>
       </div>
-      
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="invoices" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            <span className="hidden sm:inline">Facturas</span>
-            <span className="inline sm:hidden">Fact.</span>
-          </TabsTrigger>
-          <TabsTrigger value="payments" className="flex items-center gap-2">
-            <CreditCard className="h-4 w-4" />
-            <span className="hidden sm:inline">Pagos</span>
-            <span className="inline sm:hidden">Pagos</span>
-          </TabsTrigger>
+
+      <Tabs defaultValue="invoices" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="invoices">Facturas</TabsTrigger>
+          <TabsTrigger value="reports">Reportes Mensuales</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="invoices">
-          <Card>
-            <CardHeader>
-              <CardTitle>Facturas</CardTitle>
-              <CardDescription>Lista de todas las facturas generadas</CardDescription>
-              
-              <div className="flex flex-col sm:flex-row gap-4 mt-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar por cliente o # de factura..."
-                    className="pl-8"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
+          <div className="grid gap-6">
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex justify-between items-center">
+                  <CardTitle>Gestión de Facturas</CardTitle>
+                  <Button 
+                    onClick={() => setIsCreateInvoiceDialogOpen(true)}
+                    variant="outline"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Nueva Factura
+                  </Button>
                 </div>
-                <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="w-full sm:w-[180px]">
-                    <SelectValue placeholder="Filtrar por estado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos los estados</SelectItem>
-                    <SelectItem value="pending">Pendiente</SelectItem>
-                    <SelectItem value="paid">Pagada</SelectItem>
-                    <SelectItem value="overdue">Vencida</SelectItem>
-                    <SelectItem value="cancelled">Cancelada</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[100px]"># Factura</TableHead>
-                      <TableHead className="hidden md:table-cell">Cliente</TableHead>
-                      <TableHead className="hidden md:table-cell">Fecha</TableHead>
-                      <TableHead className="hidden sm:table-cell">Vencimiento</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                      <TableHead>Estado</TableHead>
-                      <TableHead className="text-right">Acciones</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredInvoices.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center">
-                          No se encontraron facturas
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredInvoices.map((invoice) => (
-                        <TableRow key={invoice.id}>
-                          <TableCell className="font-medium">{invoice.id}</TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            {getClientName(invoice.clientId)}
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            {formatDate(invoice.date)}
-                          </TableCell>
-                          <TableCell className="hidden sm:table-cell">
-                            {formatDate(invoice.dueDate)}
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {formatCurrency(invoice.total)}
-                          </TableCell>
-                          <TableCell>
-                            {renderStatusBadge(invoice.status)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleViewInvoice(invoice)}
-                              >
-                                <FileText className="h-4 w-4" />
-                                <span className="sr-only">Ver</span>
-                              </Button>
-                              {invoice.status === 'pending' && (
-                                <Button
-                                  variant="success"
-                                  size="sm"
-                                  onClick={() => handleProcessPayment(invoice)}
-                                >
-                                  <DollarSign className="h-4 w-4" />
-                                  <span className="sr-only">Pagar</span>
-                                </Button>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="payments">
-          <Card>
-            <CardHeader>
-              <CardTitle>Pagos</CardTitle>
-              <CardDescription>Historial de pagos recibidos</CardDescription>
-              
-              <div className="flex flex-col sm:flex-row gap-4 mt-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar por cliente o # de pago..."
-                    className="pl-8"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
+                <CardDescription>
+                  Administre y supervise todas las facturas de clientes
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col md:flex-row md:justify-between md:space-x-4 mb-4 space-y-4 md:space-y-0">
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar por ID, cliente o mascota..."
+                      className="pl-8"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <div className="w-full md:w-52">
+                    <Select 
+                      value={statusFilter} 
+                      onValueChange={setStatusFilter}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Filtrar por estado" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Todos</SelectItem>
+                        <SelectItem value="paid">Pagadas</SelectItem>
+                        <SelectItem value="pending">Pendientes</SelectItem>
+                        <SelectItem value="overdue">Vencidas</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[100px]"># Pago</TableHead>
-                      <TableHead className="hidden md:table-cell"># Factura</TableHead>
-                      <TableHead className="hidden md:table-cell">Cliente</TableHead>
-                      <TableHead className="hidden sm:table-cell">Fecha</TableHead>
-                      <TableHead className="text-right">Monto</TableHead>
-                      <TableHead className="hidden sm:table-cell">Método</TableHead>
-                      <TableHead className="text-right">Acciones</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredPayments.length === 0 ? (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
                       <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center">
-                          No se encontraron pagos
-                        </TableCell>
+                        <TableHead className="w-[80px]">ID</TableHead>
+                        <TableHead>Cliente</TableHead>
+                        <TableHead>Mascota</TableHead>
+                        <TableHead>Fecha</TableHead>
+                        <TableHead>Vencimiento</TableHead>
+                        <TableHead>Total</TableHead>
+                        <TableHead>Estado</TableHead>
+                        <TableHead className="text-right">Acciones</TableHead>
                       </TableRow>
-                    ) : (
-                      filteredPayments.map((payment) => {
-                        const relatedInvoice = invoices.find(inv => inv.id === payment.invoiceId);
-                        const clientName = relatedInvoice 
-                          ? getClientName(relatedInvoice.clientId) 
-                          : 'Desconocido';
-                          
-                        return (
-                          <TableRow key={payment.id}>
-                            <TableCell className="font-medium">{payment.id}</TableCell>
-                            <TableCell className="hidden md:table-cell">{payment.invoiceId}</TableCell>
-                            <TableCell className="hidden md:table-cell">{clientName}</TableCell>
-                            <TableCell className="hidden sm:table-cell">{formatDate(payment.date)}</TableCell>
-                            <TableCell className="text-right font-medium">
-                              {formatCurrency(payment.amount)}
-                            </TableCell>
-                            <TableCell className="hidden sm:table-cell capitalize">
-                              {payment.method === 'credit_card' 
-                                ? 'Tarjeta de crédito' 
-                                : payment.method === 'debit_card'
-                                  ? 'Tarjeta de débito'
-                                  : payment.method === 'transfer'
-                                    ? 'Transferencia'
-                                    : payment.method === 'cash'
-                                      ? 'Efectivo'
-                                      : payment.method}
+                    </TableHeader>
+                    <TableBody>
+                      {filteredInvoices.length > 0 ? (
+                        filteredInvoices.map((invoice) => (
+                          <TableRow key={invoice.id}>
+                            <TableCell className="font-medium">{invoice.id}</TableCell>
+                            <TableCell>{getClientName(invoice.clientId)}</TableCell>
+                            <TableCell>{invoice.petId ? getPetName(invoice.petId) : 'N/A'}</TableCell>
+                            <TableCell>{new Date(invoice.date).toLocaleDateString('es-ES')}</TableCell>
+                            <TableCell>{new Date(invoice.dueDate).toLocaleDateString('es-ES')}</TableCell>
+                            <TableCell>{currencyFormatter.format(invoice.total)}</TableCell>
+                            <TableCell>
+                              <Badge variant={
+                                invoice.status === 'paid' ? 'success' :
+                                invoice.status === 'overdue' ? 'destructive' : 'outline'
+                              }>
+                                {invoice.status === 'paid' ? 'Pagada' :
+                                 invoice.status === 'pending' ? 'Pendiente' : 'Vencida'}
+                              </Badge>
                             </TableCell>
                             <TableCell className="text-right">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  if (relatedInvoice) {
-                                    handleViewInvoice(relatedInvoice);
-                                  }
-                                }}
-                              >
-                                <Receipt className="h-4 w-4" />
-                                <span className="sr-only">Ver factura</span>
-                              </Button>
+                              <div className="flex justify-end space-x-1">
+                                <Button variant="ghost" size="icon">
+                                  <Download className="h-4 w-4" />
+                                </Button>
+                                {invoice.status !== 'paid' && (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={() => openAddPaymentDialog(invoice)}
+                                  >
+                                    <CreditCard className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                <Button variant="ghost" size="icon">
+                                  <FilePen className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={8} className="text-center">
+                            No se encontraron facturas
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="reports">
+          <div className="grid gap-6">
+            <MonthlyReportCard 
+              data={monthlyReportData}
+              year={new Date().getFullYear()}
+            />
+            
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle>Detalles de Ingresos Mensuales</CardTitle>
+                <CardDescription>
+                  Registros detallados de todas las transacciones por mes
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Mes</TableHead>
+                        <TableHead>Total Facturado</TableHead>
+                        <TableHead>Pagado</TableHead>
+                        <TableHead>Pendiente</TableHead>
+                        <TableHead>Vencido</TableHead>
+                        <TableHead>Tasa de Cobro</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {monthlyReportData.map((monthData, index) => {
+                        const collectionRate = monthData.total > 0 
+                          ? ((monthData.paid / monthData.total) * 100).toFixed(1) 
+                          : '0.0';
+                        
+                        return (
+                          <TableRow key={index}>
+                            <TableCell>{monthData.month}</TableCell>
+                            <TableCell>{currencyFormatter.format(monthData.total)}</TableCell>
+                            <TableCell>{currencyFormatter.format(monthData.paid)}</TableCell>
+                            <TableCell>{currencyFormatter.format(monthData.pending)}</TableCell>
+                            <TableCell>{currencyFormatter.format(monthData.overdue)}</TableCell>
+                            <TableCell>{collectionRate}%</TableCell>
+                          </TableRow>
                         );
-                      })
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
 
-      {/* Invoice Details Dialog */}
-      <Dialog open={showInvoiceDetails} onOpenChange={setShowInvoiceDetails}>
-        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Detalles de Factura</DialogTitle>
-            <DialogDescription>
-              Información detallada de la factura
-            </DialogDescription>
-          </DialogHeader>
-          
-          {currentInvoice && (
-            <div className="space-y-6">
-              <div className="flex flex-col md:flex-row justify-between">
-                <div>
-                  <h3 className="font-bold text-lg"># {currentInvoice.id}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Estado: {renderStatusBadge(currentInvoice.status)}
-                  </p>
-                </div>
-                <div className="text-right mt-4 md:mt-0">
-                  <p className="text-sm">Fecha: {formatDate(currentInvoice.date)}</p>
-                  <p className="text-sm">Vencimiento: {formatDate(currentInvoice.dueDate)}</p>
-                </div>
-              </div>
-              
-              <div className="border-t border-b py-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="font-medium text-sm text-muted-foreground">CLIENTE</h4>
-                    <p>{getClientName(currentInvoice.clientId)}</p>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-sm text-muted-foreground">MASCOTA</h4>
-                    <p>{getPetName(currentInvoice.petId)}</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div>
-                <h4 className="font-medium mb-2">Productos y Servicios</h4>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Descripción</TableHead>
-                      <TableHead className="text-right">Cantidad</TableHead>
-                      <TableHead className="text-right">Precio</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {currentInvoice.items.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>{item.description}</TableCell>
-                        <TableCell className="text-right">{item.quantity}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(item.unitPrice)}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(item.total)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-              
-              <div className="space-y-2 text-right">
-                <div className="flex justify-between">
-                  <span>Subtotal:</span>
-                  <span>{formatCurrency(currentInvoice.subtotal)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>IVA (16%):</span>
-                  <span>{formatCurrency(currentInvoice.tax)}</span>
-                </div>
-                <div className="flex justify-between text-lg font-bold">
-                  <span>Total:</span>
-                  <span>{formatCurrency(currentInvoice.total)}</span>
-                </div>
-              </div>
-              
-              {/* Payment information if paid */}
-              {currentInvoice.status === 'paid' && currentInvoice.paymentId && (
-                <div className="border-t pt-4">
-                  <h4 className="font-medium mb-2">Información de Pago</h4>
-                  {payments
-                    .filter(payment => payment.id === currentInvoice.paymentId)
-                    .map(payment => (
-                      <div key={payment.id} className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Fecha de pago</p>
-                          <p>{formatDate(payment.date)}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Método</p>
-                          <p className="capitalize">
-                            {payment.method === 'credit_card' 
-                              ? 'Tarjeta de crédito' 
-                              : payment.method === 'debit_card'
-                                ? 'Tarjeta de débito'
-                                : payment.method === 'transfer'
-                                  ? 'Transferencia'
-                                  : payment.method === 'cash'
-                                    ? 'Efectivo'
-                                    : payment.method}
-                          </p>
-                        </div>
-                        {payment.reference && (
-                          <div className="col-span-2">
-                            <p className="text-sm text-muted-foreground">Referencia</p>
-                            <p>{payment.reference}</p>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                </div>
-              )}
-            </div>
-          )}
-          
-          <DialogFooter className="flex flex-col sm:flex-row gap-2">
-            <Button variant="outline" onClick={handlePrintInvoice} className="w-full sm:w-auto">
-              <Printer className="mr-2 h-4 w-4" />
-              Imprimir
-            </Button>
-            <Button variant="outline" onClick={handleSendInvoice} className="w-full sm:w-auto">
-              <Send className="mr-2 h-4 w-4" />
-              Enviar
-            </Button>
-            {currentInvoice && currentInvoice.status === 'pending' && (
-              <Button variant="success" onClick={() => {
-                setShowInvoiceDetails(false);
-                handleProcessPayment(currentInvoice);
-              }} className="w-full sm:w-auto">
-                <DollarSign className="mr-2 h-4 w-4" />
-                Registrar Pago
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Create Invoice Dialog */}
-      <Dialog open={showCreateInvoice} onOpenChange={setShowCreateInvoice}>
-        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Nueva Factura</DialogTitle>
-            <DialogDescription>
-              Cree una nueva factura para un cliente
-            </DialogDescription>
-          </DialogHeader>
-          
-          <Form {...invoiceForm}>
-            <form onSubmit={invoiceForm.handleSubmit(handleSubmitInvoice)} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={invoiceForm.control}
-                  name="clientId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Cliente</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccione un cliente" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {clients.map((client) => (
-                            <SelectItem key={client.id} value={client.id}>
-                              {client.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={invoiceForm.control}
-                  name="petId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Mascota (opcional)</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccione una mascota" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="">Ninguna</SelectItem>
-                          {pets
-                            .filter(pet => {
-                              const clientId = invoiceForm.watch("clientId");
-                              return clientId ? pet.ownerId === clientId : true;
-                            })
-                            .map((pet) => (
-                              <SelectItem key={pet.id} value={pet.id}>
-                                {pet.name} ({pet.species})
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={invoiceForm.control}
-                  name="dueDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Fecha de vencimiento</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              {/* Invoice Items */}
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <h4 className="font-medium">Productos y Servicios</h4>
-                  <Button type="button" variant="outline" size="sm" onClick={handleAddInvoiceItem}>
-                    <Plus className="h-4 w-4 mr-1" /> Agregar Ítem
-                  </Button>
-                </div>
-                
-                <div className="space-y-4 max-h-64 overflow-y-auto">
-                  {newInvoiceItems.length === 0 && (
-                    <p className="text-center text-sm text-muted-foreground py-4">
-                      No hay ítems agregados. Haga clic en "Agregar Ítem" para comenzar.
-                    </p>
-                  )}
-                  
-                  {newInvoiceItems.map((item, index) => (
-                    <div key={index} className="border rounded-md p-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label>Tipo</Label>
-                          <Select
-                            value={item.type}
-                            onValueChange={(value) => handleInvoiceItemChange(index, 'type', value)}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Seleccione un tipo" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="product">Producto</SelectItem>
-                              <SelectItem value="service">Servicio</SelectItem>
-                              <SelectItem value="other">Otro</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        {item.type !== 'other' && (
-                          <div>
-                            <Label>{item.type === 'product' ? 'Producto' : 'Servicio'}</Label>
-                            <Select
-                              value={item.itemId}
-                              onValueChange={(value) => handleInvoiceItemChange(index, 'itemId', value)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder={`Seleccione un ${item.type === 'product' ? 'producto' : 'servicio'}`} />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {(item.type === 'product' ? products : services).map((item) => (
-                                  <SelectItem key={item.id} value={item.id}>
-                                    {item.name} - {formatCurrency(item.price)}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        )}
-                        
-                        {item.type === 'other' && (
-                          <div>
-                            <Label>Descripción</Label>
-                            <Input
-                              value={item.description || ''}
-                              onChange={(e) => handleInvoiceItemChange(index, 'description', e.target.value)}
-                              placeholder="Descripción del ítem"
-                            />
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="grid grid-cols-3 gap-4 mt-4">
-                        <div>
-                          <Label>Cantidad</Label>
-                          <Input
-                            type="number"
-                            min="1"
-                            value={item.quantity || ''}
-                            onChange={(e) => handleInvoiceItemChange(index, 'quantity', e.target.value)}
-                          />
-                        </div>
-                        <div>
-                          <Label>Precio Unitario</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={item.unitPrice || ''}
-                            onChange={(e) => handleInvoiceItemChange(index, 'unitPrice', e.target.value)}
-                            disabled={item.type !== 'other' && !!item.itemId}
-                          />
-                        </div>
-                        <div>
-                          <Label>Total</Label>
-                          <Input
-                            value={formatCurrency(item.total || 0)}
-                            disabled
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="flex justify-end mt-4">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleRemoveInvoiceItem(index)}
-                        >
-                          Eliminar
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Invoice Summary */}
-              {newInvoiceItems.length > 0 && (
-                <div className="space-y-2 text-right border-t pt-4">
-                  <div className="flex justify-between">
-                    <span>Subtotal:</span>
-                    <span>{formatCurrency(calculateNewInvoiceTotal().subtotal)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>IVA (16%):</span>
-                    <span>{formatCurrency(calculateNewInvoiceTotal().tax)}</span>
-                  </div>
-                  <div className="flex justify-between text-lg font-bold">
-                    <span>Total:</span>
-                    <span>{formatCurrency(calculateNewInvoiceTotal().total)}</span>
-                  </div>
-                </div>
-              )}
-              
-              <DialogFooter className="pt-4">
-                <Button variant="outline" type="button" onClick={() => setShowCreateInvoice(false)}>
-                  Cancelar
-                </Button>
-                <Button type="submit">Crear Factura</Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Payment Dialog */}
-      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
+      {/* Diálogo para registrar un pago */}
+      <Dialog open={isAddPaymentDialogOpen} onOpenChange={setIsAddPaymentDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Registrar Pago</DialogTitle>
             <DialogDescription>
-              {currentInvoice && `Factura #${currentInvoice.id} - ${getClientName(currentInvoice.clientId)}`}
+              {selectedInvoice && (
+                <p>Registre el pago para la factura <strong>{selectedInvoice.id}</strong> de <strong>{currencyFormatter.format(selectedInvoice.total)}</strong></p>
+              )}
             </DialogDescription>
           </DialogHeader>
-          
+
           <Form {...paymentForm}>
-            <form onSubmit={paymentForm.handleSubmit(handleSubmitPayment)} className="space-y-6">
+            <form onSubmit={paymentForm.handleSubmit(handlePaymentSubmit)} className="space-y-4">
               <FormField
                 control={paymentForm.control}
                 name="amount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Monto a pagar</FormLabel>
+                    <FormLabel>Monto</FormLabel>
                     <FormControl>
-                      <Input {...field} type="number" min="0" step="0.01" />
+                      <div className="relative">
+                        <span className="absolute left-2 top-2.5 text-sm text-muted-foreground">$</span>
+                        <Input 
+                          type="number"
+                          step="0.01" 
+                          min="0"
+                          className="pl-6" 
+                          {...field}
+                        />
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={paymentForm.control}
                 name="method"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Método de pago</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Seleccione un método de pago" />
@@ -1031,36 +417,48 @@ const Billing = () => {
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="cash">Efectivo</SelectItem>
-                        <SelectItem value="credit_card">Tarjeta de crédito</SelectItem>
-                        <SelectItem value="debit_card">Tarjeta de débito</SelectItem>
+                        <SelectItem value="credit_card">Tarjeta de Crédito</SelectItem>
+                        <SelectItem value="debit_card">Tarjeta de Débito</SelectItem>
                         <SelectItem value="transfer">Transferencia</SelectItem>
-                        <SelectItem value="other">Otro</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
-              <FormField
-                control={paymentForm.control}
-                name="reference"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Referencia (opcional)</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Número de autorización, voucher, etc." />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <DialogFooter>
-                <Button variant="outline" type="button" onClick={() => setShowPaymentDialog(false)}>
+
+              {paymentForm.watch("method") !== "cash" && (
+                <FormField
+                  control={paymentForm.control}
+                  name="reference"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Referencia</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Número de autorización o referencia" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              <DialogFooter className="pt-4">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsAddPaymentDialogOpen(false);
+                    setSelectedInvoice(null);
+                    paymentForm.reset();
+                  }}
+                >
                   Cancelar
                 </Button>
-                <Button type="submit" variant="success">Procesar Pago</Button>
+                <Button type="submit">Registrar Pago</Button>
               </DialogFooter>
             </form>
           </Form>

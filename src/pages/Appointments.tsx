@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { Calendar, Clock, FileText, Check, X } from 'lucide-react';
+import { Calendar, Clock, FileText, Check, X, DollarSign } from 'lucide-react';
 import { UserIcon } from 'lucide-react';
 import { PawIcon } from '@/components/icons/PawIcon';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +15,10 @@ import { appointments as mockAppointments, pets as mockPets, users as mockUsers 
 import { Appointment, Pet } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { ExtendedBadge } from '@/components/ui/extended-badge';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 const Appointments = () => {
   const { currentUser } = useAuth();
@@ -21,6 +26,8 @@ const Appointments = () => {
   const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isConsultationDialogOpen, setIsConsultationDialogOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   
   const availablePets = currentUser?.role === 'client' 
     ? mockPets.filter(pet => pet.ownerId === currentUser.id)
@@ -93,6 +100,66 @@ const Appointments = () => {
       title: 'Cita creada',
       description: `Se ha programado una cita para ${getPetName(newAppointment.petId)} el ${newAppointment.date} a las ${newAppointment.time}.`,
     });
+  };
+  
+  // Esquema para la validación del formulario de consulta
+  const consultationSchema = z.object({
+    diagnosis: z.string().min(3, "El diagnóstico es requerido"),
+    treatment: z.string().min(3, "El tratamiento es requerido"),
+    observations: z.string().optional(),
+    cost: z.string().min(1, "El costo es requerido"),
+    createInvoice: z.boolean().default(false),
+  });
+
+  // Tipo para los datos del formulario
+  type ConsultationFormValues = z.infer<typeof consultationSchema>;
+
+  // Formulario para el registro de consulta
+  const consultationForm = useForm<ConsultationFormValues>({
+    resolver: zodResolver(consultationSchema),
+    defaultValues: {
+      diagnosis: "",
+      treatment: "",
+      observations: "",
+      cost: "",
+      createInvoice: false,
+    },
+  });
+  
+  // Manejar el envío del formulario de consulta
+  const handleConsultationSubmit = (data: ConsultationFormValues) => {
+    if (!selectedAppointment) return;
+    
+    // Actualizar el estado de la cita a completada
+    handleStatusChange(selectedAppointment.id, 'completed');
+    
+    // Crear una factura si se seleccionó esa opción
+    if (data.createInvoice) {
+      // Aquí podríamos redirigir al usuario a la página de facturación o generar la factura automáticamente
+      toast({
+        title: 'Factura generada',
+        description: `Se ha generado una factura por $${data.cost} para la consulta de ${getPetName(selectedAppointment.petId)}.`,
+        variant: "success",
+      });
+    }
+    
+    // Registrar la consulta
+    toast({
+      title: 'Consulta registrada',
+      description: `La consulta para ${getPetName(selectedAppointment.petId)} ha sido registrada exitosamente.`,
+      variant: "success",
+    });
+    
+    // Cerrar el diálogo
+    setIsConsultationDialogOpen(false);
+    setSelectedAppointment(null);
+    consultationForm.reset();
+  };
+
+  // Abrir el diálogo para registrar una consulta
+  const openConsultationDialog = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    setIsConsultationDialogOpen(true);
   };
 
   return (
@@ -286,10 +353,7 @@ const Appointments = () => {
                         size="sm" 
                         variant="outline" 
                         className="flex items-center gap-1 ml-auto"
-                        onClick={() => toast({
-                          title: 'En desarrollo',
-                          description: 'La función para registrar consulta estará disponible próximamente.',
-                        })}
+                        onClick={() => openConsultationDialog(appointment)}
                       >
                         <FileText className="h-4 w-4" />
                         Registrar consulta
@@ -319,6 +383,135 @@ const Appointments = () => {
           </div>
         )}
       </div>
+
+      {/* Diálogo para registrar consulta */}
+      <Dialog open={isConsultationDialogOpen} onOpenChange={setIsConsultationDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Registrar Consulta Médica</DialogTitle>
+            <DialogDescription>
+              {selectedAppointment && (
+                <p>Registre la consulta para <strong>{getPetName(selectedAppointment.petId)}</strong> del día <strong>{new Date(selectedAppointment.date).toLocaleDateString('es-ES')}</strong></p>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...consultationForm}>
+            <form onSubmit={consultationForm.handleSubmit(handleConsultationSubmit)} className="space-y-6">
+              <FormField
+                control={consultationForm.control}
+                name="diagnosis"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Diagnóstico</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Ingrese el diagnóstico médico" 
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={consultationForm.control}
+                name="treatment"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tratamiento</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Detalle el tratamiento indicado" 
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={consultationForm.control}
+                name="observations"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Observaciones</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Observaciones adicionales" 
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={consultationForm.control}
+                  name="cost"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Costo de la consulta</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <DollarSign className="absolute left-2 top-3 h-4 w-4 text-muted-foreground" />
+                          <Input 
+                            type="number" 
+                            placeholder="0.00" 
+                            min="0"
+                            step="0.01"
+                            className="pl-8"
+                            {...field}
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={consultationForm.control}
+                  name="createInvoice"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-end space-x-2 space-y-0">
+                      <FormControl>
+                        <input
+                          type="checkbox"
+                          checked={field.value}
+                          onChange={field.onChange}
+                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                        />
+                      </FormControl>
+                      <FormLabel>Generar factura</FormLabel>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <DialogFooter>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsConsultationDialogOpen(false);
+                    setSelectedAppointment(null);
+                    consultationForm.reset();
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit">Guardar Consulta</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
