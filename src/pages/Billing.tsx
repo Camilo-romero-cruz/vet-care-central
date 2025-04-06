@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { 
   Card, 
@@ -371,7 +372,7 @@ const Billing = () => {
     toast({
       title: "Pago registrado",
       description: `Pago de ${formatCurrency(parseFloat(data.amount))} registrado con éxito`,
-      variant: "success", // This line is now valid with our updated Toast component
+      variant: "success",
     });
     
     setShowPaymentDialog(false);
@@ -906,3 +907,167 @@ const Billing = () => {
                         
                         {item.type === 'other' && (
                           <div>
+                            <Label>Descripción</Label>
+                            <Input
+                              value={item.description || ''}
+                              onChange={(e) => handleInvoiceItemChange(index, 'description', e.target.value)}
+                              placeholder="Descripción del ítem"
+                            />
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-4 mt-4">
+                        <div>
+                          <Label>Cantidad</Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={item.quantity || ''}
+                            onChange={(e) => handleInvoiceItemChange(index, 'quantity', e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <Label>Precio Unitario</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.unitPrice || ''}
+                            onChange={(e) => handleInvoiceItemChange(index, 'unitPrice', e.target.value)}
+                            disabled={item.type !== 'other' && !!item.itemId}
+                          />
+                        </div>
+                        <div>
+                          <Label>Total</Label>
+                          <Input
+                            value={formatCurrency(item.total || 0)}
+                            disabled
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-end mt-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleRemoveInvoiceItem(index)}
+                        >
+                          Eliminar
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Invoice Summary */}
+              {newInvoiceItems.length > 0 && (
+                <div className="space-y-2 text-right border-t pt-4">
+                  <div className="flex justify-between">
+                    <span>Subtotal:</span>
+                    <span>{formatCurrency(calculateNewInvoiceTotal().subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>IVA (16%):</span>
+                    <span>{formatCurrency(calculateNewInvoiceTotal().tax)}</span>
+                  </div>
+                  <div className="flex justify-between text-lg font-bold">
+                    <span>Total:</span>
+                    <span>{formatCurrency(calculateNewInvoiceTotal().total)}</span>
+                  </div>
+                </div>
+              )}
+              
+              <DialogFooter className="pt-4">
+                <Button variant="outline" type="button" onClick={() => setShowCreateInvoice(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit">Crear Factura</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment Dialog */}
+      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Registrar Pago</DialogTitle>
+            <DialogDescription>
+              {currentInvoice && `Factura #${currentInvoice.id} - ${getClientName(currentInvoice.clientId)}`}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...paymentForm}>
+            <form onSubmit={paymentForm.handleSubmit(handleSubmitPayment)} className="space-y-6">
+              <FormField
+                control={paymentForm.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Monto a pagar</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="number" min="0" step="0.01" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={paymentForm.control}
+                name="method"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Método de pago</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccione un método de pago" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="cash">Efectivo</SelectItem>
+                        <SelectItem value="credit_card">Tarjeta de crédito</SelectItem>
+                        <SelectItem value="debit_card">Tarjeta de débito</SelectItem>
+                        <SelectItem value="transfer">Transferencia</SelectItem>
+                        <SelectItem value="other">Otro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={paymentForm.control}
+                name="reference"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Referencia (opcional)</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Número de autorización, voucher, etc." />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button variant="outline" type="button" onClick={() => setShowPaymentDialog(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" variant="success">Procesar Pago</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default Billing;
