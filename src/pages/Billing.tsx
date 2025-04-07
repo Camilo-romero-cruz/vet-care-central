@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,7 @@ const Billing = () => {
   const [isCreateInvoiceDialogOpen, setIsCreateInvoiceDialogOpen] = useState(false);
   const [isAddPaymentDialogOpen, setIsAddPaymentDialogOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [isEditInvoiceDialogOpen, setIsEditInvoiceDialogOpen] = useState(false);
   
   const canCreateInvoices = hasFeatureAccess('billing_create');
   const canProcessPayments = hasFeatureAccess('billing_payment');
@@ -93,6 +95,53 @@ const Billing = () => {
     setSelectedInvoice(invoice);
     paymentForm.setValue('amount', invoice.total.toString());
     setIsAddPaymentDialogOpen(true);
+  };
+
+  // New function to handle invoice download
+  const handleDownloadInvoice = (invoice: Invoice) => {
+    // In a real app, this would generate a PDF or similar document
+    toast({
+      title: 'Descargando factura',
+      description: `Descargando factura ${invoice.id} en PDF.`,
+      variant: "default",
+    });
+    
+    // Simulate download delay
+    setTimeout(() => {
+      toast({
+        title: 'Factura descargada',
+        description: `La factura ${invoice.id} ha sido descargada exitosamente.`,
+        variant: "success",
+      });
+    }, 1500);
+  };
+
+  // New function to edit invoice
+  const openEditInvoiceDialog = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setIsEditInvoiceDialogOpen(true);
+    
+    toast({
+      title: 'Editar factura',
+      description: `Editando factura ${invoice.id}.`,
+      variant: "default",
+    });
+  };
+
+  // New function to handle "Nueva Factura" button
+  const openCreateInvoiceDialog = () => {
+    setIsCreateInvoiceDialogOpen(true);
+    setSelectedInvoice(null);
+  };
+
+  // Function to create a new invoice
+  const handleCreateInvoice = () => {
+    toast({
+      title: 'Factura creada',
+      description: `Se ha creado una nueva factura exitosamente.`,
+      variant: "success",
+    });
+    setIsCreateInvoiceDialogOpen(false);
   };
 
   const filteredInvoices = useMemo(() => {
@@ -188,7 +237,7 @@ const Billing = () => {
                   <CardTitle>Gestión de Facturas</CardTitle>
                   {canCreateInvoices && (
                     <Button 
-                      onClick={() => setIsCreateInvoiceDialogOpen(true)}
+                      onClick={openCreateInvoiceDialog}
                       variant="outline"
                     >
                       <Plus className="mr-2 h-4 w-4" />
@@ -265,7 +314,11 @@ const Billing = () => {
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end space-x-1">
-                                <Button variant="ghost" size="icon">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  onClick={() => handleDownloadInvoice(invoice)}
+                                >
                                   <Download className="h-4 w-4" />
                                 </Button>
                                 {invoice.status !== 'paid' && canProcessPayments && (
@@ -278,7 +331,11 @@ const Billing = () => {
                                   </Button>
                                 )}
                                 {canCreateInvoices && (
-                                  <Button variant="ghost" size="icon">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={() => openEditInvoiceDialog(invoice)}
+                                  >
                                     <FilePen className="h-4 w-4" />
                                   </Button>
                                 )}
@@ -452,6 +509,188 @@ const Billing = () => {
               </DialogFooter>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Nueva Factura Dialog */}
+      <Dialog open={isCreateInvoiceDialogOpen} onOpenChange={setIsCreateInvoiceDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Crear Nueva Factura</DialogTitle>
+            <DialogDescription>
+              Complete los datos para crear una nueva factura
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="client">Cliente</Label>
+                <Select defaultValue="client-1">
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccione un cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {mockUsers
+                      .filter(user => user.role === 'client')
+                      .map(client => (
+                        <SelectItem key={client.id} value={client.id}>
+                          {client.name}
+                        </SelectItem>
+                      ))
+                    }
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="pet">Mascota</Label>
+                <Select defaultValue="pet-1">
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccione una mascota" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {mockPets.map(pet => (
+                      <SelectItem key={pet.id} value={pet.id}>
+                        {pet.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Elementos de la Factura</Label>
+              <div className="rounded-md border p-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div className="font-medium">Producto o Servicio</div>
+                    <Button variant="outline" size="sm">
+                      <Plus className="h-4 w-4 mr-1" /> Agregar
+                    </Button>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    No se han agregado elementos a esta factura
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsCreateInvoiceDialogOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleCreateInvoice}>Crear Factura</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Editar Factura Dialog */}
+      <Dialog open={isEditInvoiceDialogOpen} onOpenChange={setIsEditInvoiceDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Editar Factura</DialogTitle>
+            <DialogDescription>
+              {selectedInvoice && (
+                <p>Modificando la factura <strong>{selectedInvoice.id}</strong></p>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-client">Cliente</Label>
+                <Select defaultValue={selectedInvoice?.clientId || "client-1"}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccione un cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {mockUsers
+                      .filter(user => user.role === 'client')
+                      .map(client => (
+                        <SelectItem key={client.id} value={client.id}>
+                          {client.name}
+                        </SelectItem>
+                      ))
+                    }
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-pet">Mascota</Label>
+                <Select defaultValue={selectedInvoice?.petId || "pet-1"}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccione una mascota" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {mockPets.map(pet => (
+                      <SelectItem key={pet.id} value={pet.id}>
+                        {pet.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            {selectedInvoice && (
+              <div className="space-y-2">
+                <Label>Elementos de la Factura</Label>
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Descripción</TableHead>
+                        <TableHead className="w-[100px]">Cantidad</TableHead>
+                        <TableHead className="w-[100px]">Precio</TableHead>
+                        <TableHead className="w-[100px]">Total</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {selectedInvoice.items.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell>{item.description}</TableCell>
+                          <TableCell>{item.quantity}</TableCell>
+                          <TableCell>{currencyFormatter.format(item.unitPrice)}</TableCell>
+                          <TableCell>{currencyFormatter.format(item.total)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsEditInvoiceDialogOpen(false);
+                setSelectedInvoice(null);
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={() => {
+              toast({
+                title: 'Factura actualizada',
+                description: 'Los cambios han sido guardados correctamente.',
+                variant: "success",
+              });
+              setIsEditInvoiceDialogOpen(false);
+              setSelectedInvoice(null);
+            }}>
+              Guardar Cambios
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
