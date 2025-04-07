@@ -115,9 +115,10 @@ const SelectItem = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>
 >(({ className, children, ...props }, ref) => {
   // Ensure that value is never empty by providing a fallback
+  // This is a comprehensive fix to prevent any empty string values
   const safeProps = {
     ...props,
-    value: props.value === "" ? "default_value" : props.value
+    value: props.value === "" || props.value === undefined ? "default_value" : props.value
   };
 
   return (

@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -35,7 +34,6 @@ const Billing = () => {
   const canCreateInvoices = hasFeatureAccess('billing_create');
   const canProcessPayments = hasFeatureAccess('billing_payment');
 
-  // Esquema para la validación del formulario de pago
   const paymentSchema = z.object({
     amount: z.string().min(1, 'El monto es requerido'),
     method: z.enum(['cash', 'credit_card', 'debit_card', 'transfer'], {
@@ -44,10 +42,8 @@ const Billing = () => {
     reference: z.string().optional(),
   });
 
-  // Tipo para los datos del formulario de pago
   type PaymentFormValues = z.infer<typeof paymentSchema>;
 
-  // Formulario para registrar un pago
   const paymentForm = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentSchema),
     defaultValues: {
@@ -57,7 +53,6 @@ const Billing = () => {
     },
   });
 
-  // Manejar el envío del formulario de pago
   const handlePaymentSubmit = (data: PaymentFormValues) => {
     if (!selectedInvoice) return;
 
@@ -71,7 +66,6 @@ const Billing = () => {
       reference: data.method !== 'cash' ? data.reference : undefined,
     };
 
-    // Actualizar el estado de la factura a pagada
     const updatedInvoices = invoices.map(invoice => 
       invoice.id === selectedInvoice.id 
         ? { 
@@ -95,14 +89,12 @@ const Billing = () => {
     });
   };
 
-  // Abrir el diálogo para registrar un pago
   const openAddPaymentDialog = (invoice: Invoice) => {
     setSelectedInvoice(invoice);
     paymentForm.setValue('amount', invoice.total.toString());
     setIsAddPaymentDialogOpen(true);
   };
 
-  // Filtrar facturas por término de búsqueda y estado
   const filteredInvoices = useMemo(() => {
     return invoices.filter(invoice => {
       const searchMatch = 
@@ -116,32 +108,27 @@ const Billing = () => {
     });
   }, [invoices, searchTerm, statusFilter]);
 
-  // Obtener el nombre de la mascota a partir de su ID
   const getPetName = (petId?: string): string => {
     if (!petId) return 'N/A';
     const pet = mockPets.find(pet => pet.id === petId);
     return pet ? pet.name : 'Mascota no encontrada';
   };
 
-  // Obtener el nombre del cliente a partir de su ID
   const getClientName = (clientId: string): string => {
     const client = mockUsers.find(user => user.id === clientId);
     return client ? client.name : 'Cliente no encontrado';
   };
 
-  // Obtener la información de pago de una factura
   const getPaymentInfo = (paymentId?: string): Payment | undefined => {
     if (!paymentId) return undefined;
     return payments.find(payment => payment.id === paymentId);
   };
 
-  // Formateador de moneda
   const currencyFormatter = new Intl.NumberFormat('es-MX', {
     style: 'currency',
     currency: 'MXN',
   });
 
-  // Generar datos para el reporte mensual
   const generateMonthlyReportData = () => {
     const year = new Date().getFullYear();
     const months = [
@@ -179,7 +166,6 @@ const Billing = () => {
     });
   };
 
-  // Datos para el reporte mensual
   const monthlyReportData = generateMonthlyReportData();
 
   return (
@@ -368,7 +354,6 @@ const Billing = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Diálogo para registrar un pago */}
       <Dialog open={isAddPaymentDialogOpen} onOpenChange={setIsAddPaymentDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
