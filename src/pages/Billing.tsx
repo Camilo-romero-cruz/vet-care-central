@@ -27,7 +27,7 @@ const Billing = () => {
   const [invoices, setInvoices] = useState<Invoice[]>(mockInvoices);
   const [payments, setPayments] = useState<Payment[]>(mockPayments);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isCreateInvoiceDialogOpen, setIsCreateInvoiceDialogOpen] = useState(false);
   const [isAddPaymentDialogOpen, setIsAddPaymentDialogOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
@@ -110,7 +110,7 @@ const Billing = () => {
         getPetName(invoice.petId).toLowerCase().includes(searchTerm.toLowerCase()) ||
         getClientName(invoice.clientId).toLowerCase().includes(searchTerm.toLowerCase());
 
-      const statusMatch = statusFilter ? invoice.status === statusFilter : true;
+      const statusMatch = statusFilter === 'all' ? true : invoice.status === statusFilter;
       
       return searchMatch && statusMatch;
     });
@@ -234,7 +234,7 @@ const Billing = () => {
                         <SelectValue placeholder="Filtrar por estado" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Todos</SelectItem>
+                        <SelectItem value="all">Todos</SelectItem>
                         <SelectItem value="paid">Pagadas</SelectItem>
                         <SelectItem value="pending">Pendientes</SelectItem>
                         <SelectItem value="overdue">Vencidas</SelectItem>
