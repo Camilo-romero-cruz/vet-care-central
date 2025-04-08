@@ -291,41 +291,44 @@ const Products = () => {
   };
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">Productos</h1>
-        <Button className="flex items-center gap-2" onClick={() => setIsNewProductDialogOpen(true)}>
+    <div className="container mx-auto px-2 sm:px-4 md:px-6 max-w-7xl animate-fade-in">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Productos</h1>
+        <Button 
+          className="flex items-center gap-2 w-full sm:w-auto" 
+          onClick={() => setIsNewProductDialogOpen(true)}
+        >
           <Plus className="h-4 w-4" /> Nuevo Producto
         </Button>
       </div>
       
       <div className="mb-6 flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
+        <div className="relative flex-1 w-full">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             placeholder="Buscar productos..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 w-full"
           />
         </div>
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="outline" className="flex items-center gap-2">
+            <Button variant="outline" className="flex items-center gap-2 w-full sm:w-auto">
               <Filter className="h-4 w-4" /> Filtrar
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-56">
+          <PopoverContent className="w-64 sm:w-72 p-4">
             <div className="space-y-4">
               <h4 className="font-medium leading-none">Estado</h4>
-              <div className="flex flex-col gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div className="flex items-center space-x-2">
                   <Checkbox 
                     id="inStock" 
                     checked={activeFilters.inStock}
                     onCheckedChange={(checked) => handleFilterChange('inStock', checked)} 
                   />
-                  <Label htmlFor="inStock">En stock</Label>
+                  <Label htmlFor="inStock" className="text-sm">En stock</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox 
@@ -333,7 +336,7 @@ const Products = () => {
                     checked={activeFilters.lowStock}
                     onCheckedChange={(checked) => handleFilterChange('lowStock', checked)} 
                   />
-                  <Label htmlFor="lowStock">Stock bajo</Label>
+                  <Label htmlFor="lowStock" className="text-sm">Stock bajo</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox 
@@ -341,19 +344,19 @@ const Products = () => {
                     checked={activeFilters.outOfStock}
                     onCheckedChange={(checked) => handleFilterChange('outOfStock', checked)} 
                   />
-                  <Label htmlFor="outOfStock">Agotado</Label>
+                  <Label htmlFor="outOfStock" className="text-sm">Agotado</Label>
                 </div>
               </div>
 
               <h4 className="font-medium leading-none pt-2 border-t">Categoría</h4>
-              <div className="flex flex-col gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div className="flex items-center space-x-2">
                   <Checkbox 
                     id="alimentos" 
                     checked={activeFilters.alimentos}
                     onCheckedChange={(checked) => handleFilterChange('alimentos', checked)} 
                   />
-                  <Label htmlFor="alimentos">Alimentos</Label>
+                  <Label htmlFor="alimentos" className="text-sm">Alimentos</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox 
@@ -361,7 +364,7 @@ const Products = () => {
                     checked={activeFilters.medicamentos}
                     onCheckedChange={(checked) => handleFilterChange('medicamentos', checked)} 
                   />
-                  <Label htmlFor="medicamentos">Medicamentos</Label>
+                  <Label htmlFor="medicamentos" className="text-sm">Medicamentos</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox 
@@ -369,7 +372,7 @@ const Products = () => {
                     checked={activeFilters.higiene}
                     onCheckedChange={(checked) => handleFilterChange('higiene', checked)} 
                   />
-                  <Label htmlFor="higiene">Higiene</Label>
+                  <Label htmlFor="higiene" className="text-sm">Higiene</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox 
@@ -377,7 +380,7 @@ const Products = () => {
                     checked={activeFilters.accesorios}
                     onCheckedChange={(checked) => handleFilterChange('accesorios', checked)} 
                   />
-                  <Label htmlFor="accesorios">Accesorios</Label>
+                  <Label htmlFor="accesorios" className="text-sm">Accesorios</Label>
                 </div>
               </div>
             </div>
@@ -386,45 +389,45 @@ const Products = () => {
       </div>
       
       {isMobile ? (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {filteredProducts.map(product => (
-            <Card key={product.id}>
+            <Card key={product.id} className="h-full">
               <CardHeader className="pb-2">
-                <div className="flex justify-between items-center">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Package className="h-5 w-5 text-primary" />
-                    {product.name}
+                <div className="flex justify-between items-center flex-wrap gap-2">
+                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                    <Package className="h-4 w-4 text-primary shrink-0" />
+                    <span className="truncate">{product.name}</span>
                   </CardTitle>
-                  <ExtendedBadge variant={getStockVariant(product.status)}>
+                  <ExtendedBadge variant={getStockVariant(product.status)} className="whitespace-nowrap">
                     {getStockText(product.status)}
                   </ExtendedBadge>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 gap-2">
+                <div className="grid grid-cols-1 gap-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Categoría:</span>
-                    <span>{product.category}</span>
+                    <span className="font-medium">{product.category}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Precio:</span>
-                    <span>${product.price.toFixed(2)}</span>
+                    <span className="font-medium">${product.price.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Stock:</span>
-                    <span>{product.stock} unidades</span>
+                    <span className="font-medium">{product.stock} unidades</span>
                   </div>
-                  <div className="flex gap-2 mt-2">
+                  <div className="flex gap-2 mt-3">
                     <Button 
                       variant="outline" 
-                      className="flex-1"
+                      className="flex-1 text-xs sm:text-sm px-2 sm:px-4 h-8 sm:h-9"
                       onClick={() => handleEditClick(product)}
                     >
                       Editar
                     </Button>
                     <Button 
                       variant="outline" 
-                      className="flex-1"
+                      className="flex-1 text-xs sm:text-sm px-2 sm:px-4 h-8 sm:h-9"
                       onClick={() => handleRestockClick(product)}
                       disabled={product.status === 'inStock' && product.stock > 40}
                     >
@@ -437,63 +440,75 @@ const Products = () => {
           ))}
         </div>
       ) : (
-        <Card>
+        <Card className="overflow-hidden">
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Categoría</TableHead>
-                  <TableHead>Precio</TableHead>
-                  <TableHead>Stock</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredProducts.map(product => (
-                  <TableRow key={product.id}>
-                    <TableCell>{product.id}</TableCell>
-                    <TableCell className="font-medium">{product.name}</TableCell>
-                    <TableCell>{product.category}</TableCell>
-                    <TableCell>${product.price.toFixed(2)}</TableCell>
-                    <TableCell>{product.stock}</TableCell>
-                    <TableCell>
-                      <ExtendedBadge variant={getStockVariant(product.status)}>
-                        {getStockText(product.status)}
-                      </ExtendedBadge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleEditClick(product)}
-                        >
-                          Editar
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleRestockClick(product)}
-                          disabled={product.status === 'inStock' && product.stock > 40}
-                        >
-                          Restock
-                        </Button>
-                      </div>
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12">ID</TableHead>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>Categoría</TableHead>
+                    <TableHead className="text-right">Precio</TableHead>
+                    <TableHead className="text-right">Stock</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredProducts.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="h-24 text-center">
+                        No se encontraron productos
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredProducts.map(product => (
+                      <TableRow key={product.id}>
+                        <TableCell className="font-medium">{product.id}</TableCell>
+                        <TableCell className="max-w-[200px] truncate">{product.name}</TableCell>
+                        <TableCell>{product.category}</TableCell>
+                        <TableCell className="text-right">${product.price.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">{product.stock}</TableCell>
+                        <TableCell>
+                          <ExtendedBadge variant={getStockVariant(product.status)}>
+                            {getStockText(product.status)}
+                          </ExtendedBadge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex gap-2 justify-end">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="h-8 px-2 text-xs lg:h-9 lg:px-4 lg:text-sm whitespace-nowrap"
+                              onClick={() => handleEditClick(product)}
+                            >
+                              Editar
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="h-8 px-2 text-xs lg:h-9 lg:px-4 lg:text-sm whitespace-nowrap"
+                              onClick={() => handleRestockClick(product)}
+                              disabled={product.status === 'inStock' && product.stock > 40}
+                            >
+                              Restock
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}
 
       {/* Dialog para nuevo producto */}
       <Dialog open={isNewProductDialogOpen} onOpenChange={setIsNewProductDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-w-[90vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Nuevo Producto</DialogTitle>
             <DialogDescription>
@@ -551,16 +566,16 @@ const Products = () => {
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsNewProductDialogOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSaveNewProduct}>Guardar</Button>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setIsNewProductDialogOpen(false)} className="w-full sm:w-auto">Cancelar</Button>
+            <Button onClick={handleSaveNewProduct} className="w-full sm:w-auto">Guardar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Dialog para editar producto */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-w-[90vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Producto</DialogTitle>
             <DialogDescription>
@@ -620,16 +635,16 @@ const Products = () => {
               </div>
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSaveEditedProduct}>Guardar Cambios</Button>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} className="w-full sm:w-auto">Cancelar</Button>
+            <Button onClick={handleSaveEditedProduct} className="w-full sm:w-auto">Guardar Cambios</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Dialog para restock */}
       <Dialog open={isRestockDialogOpen} onOpenChange={setIsRestockDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-w-[90vw]">
           <DialogHeader>
             <DialogTitle>Restock de Producto</DialogTitle>
             <DialogDescription>
@@ -655,9 +670,9 @@ const Products = () => {
               </div>
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsRestockDialogOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSaveRestock}>Confirmar Restock</Button>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setIsRestockDialogOpen(false)} className="w-full sm:w-auto">Cancelar</Button>
+            <Button onClick={handleSaveRestock} className="w-full sm:w-auto">Confirmar Restock</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
