@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -41,7 +40,7 @@ const Products = () => {
   } = useProducts();
 
   return (
-    <div className="container mx-auto px-2 sm:px-4 md:px-6 max-w-7xl animate-fade-in">
+    <div className="container mx-auto px-2 sm:px-4 md:px-6 max-w-7xl animate-fade-in pb-16 md:pb-0">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Productos</h1>
         <Button 
@@ -88,7 +87,6 @@ const Products = () => {
         </Card>
       )}
 
-      {/* Dialogs */}
       <NewProductDialog 
         isOpen={isNewProductDialogOpen}
         onOpenChange={setIsNewProductDialogOpen}
