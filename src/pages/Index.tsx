@@ -1,13 +1,18 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import { Chat } from "@/components/Chat";
+import { ThemeProvider } from "@/hooks/use-theme";
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
+    <ThemeProvider>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold mb-4">Welcome to Your Chat App</h1>
+          <p className="text-xl text-muted-foreground">Click the button in the bottom right to start chatting!</p>
+        </div>
+        <Chat />
       </div>
-    </div>
+    </ThemeProvider>
   );
 };
 
