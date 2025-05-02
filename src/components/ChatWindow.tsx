@@ -1,6 +1,6 @@
 
 import { useEffect, useRef, useState } from "react";
-import { useChat } from "@/hooks/use-chat";
+import { useChat, Message } from "@/hooks/use-chat";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { sendMessage } from "@/services/chat-service";
@@ -12,7 +12,7 @@ import { toast } from "sonner";
 export const ChatWindow = () => {
   const { isOpen, messages, addMessage, isLoading, setLoading, apiKey, setApiKey, toggleChat } = useChat();
   const [input, setInput] = useState("");
-  const [showApiKeyInput, setShowApiKeyInput] = useState(false); // Changed to false since we have a default key
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false); // Set to false since we have a default key
   const [apiKeyInput, setApiKeyInput] = useState("");
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const { theme, setTheme } = useTheme();
@@ -34,13 +34,19 @@ export const ChatWindow = () => {
     setLoading(true);
     
     try {
-      const allMessages = [
+      // Create a properly typed message array
+      const allMessages: Message[] = [
         ...messages, 
-        { id: "temp", role: "user", content: input, timestamp: Date.now() }
+        { 
+          id: "temp", 
+          role: "user" as const, 
+          content: input, 
+          timestamp: Date.now() 
+        }
       ];
       
       const response = await sendMessage(allMessages, apiKey);
-      addMessage({ role: "assistant", content: response });
+      addMessage({ role: "assistant" as const, content: response });
     } catch (error: any) {
       toast.error("Error: " + (error.message || "Failed to send message"));
       
