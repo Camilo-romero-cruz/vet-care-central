@@ -8,11 +8,14 @@ export type Message = {
   timestamp: number;
 };
 
+// Default API key
+const DEFAULT_API_KEY = "sk-cfacd9a871164ae09d2ab64f81bfc943";
+
 interface ChatStore {
   isOpen: boolean;
   messages: Message[];
   isLoading: boolean;
-  apiKey: string | null;
+  apiKey: string;
   toggleChat: () => void;
   addMessage: (message: Omit<Message, "id" | "timestamp">) => void;
   setLoading: (loading: boolean) => void;
@@ -23,7 +26,7 @@ export const useChat = create<ChatStore>((set) => ({
   isOpen: false,
   messages: [],
   isLoading: false,
-  apiKey: localStorage.getItem("deepseek-api-key") || null,
+  apiKey: localStorage.getItem("deepseek-api-key") || DEFAULT_API_KEY,
   toggleChat: () => set((state) => ({ isOpen: !state.isOpen })),
   addMessage: (message) =>
     set((state) => ({
